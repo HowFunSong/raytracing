@@ -6,7 +6,7 @@
 
 class camera{
   public :
-    double aspect_ratio   = 1.0;
+    double aspect_ratio   = 16.0 / 9.0;
     double image_width    = 100;
     int samples_per_pixel = 10;
     int max_depth         = 50;
@@ -17,8 +17,8 @@ class camera{
     point3 lookat   = point3(0, 0, -1);
     vec3   vup      = vec3(0,1,0);   
 
-    double defocus_angle = 0;
-    double focus_dist = 10;
+    double defocus_angle = 0; // Variation angle of rays through each pixel
+    double focus_dist = 10;    // Distance from camera lookfrom point to plane of perfect focus
 
     void render (const hittable& world){
 
@@ -47,14 +47,15 @@ class camera{
   private :
     int image_height;            // Rendered image height
     double pixel_sample_scale;   // Color scale factor for a sum of pixel samples
-    point3 pixel00_loc;            // Location of pixel 0, 0
-    point3 center;                // Camera center
+    point3 pixel00_loc;          // Location of pixel 0, 0
+    point3 center;               // Camera center
     vec3 pixel_delta_u;
     vec3 pixel_delta_v;
     vec3   u, v, w;              // Camera frame basis vectors
-    vec3 defocus_disk_u;       // Defocus disk horizontal radius
-    vec3 defocus_disk_v;      // Defocus disk vertical radius
+    vec3 defocus_disk_u;         // Defocus disk horizontal radius
+    vec3 defocus_disk_v;         // Defocus disk vertical radius
 
+    //初始化相機參數
     void initialize(){
         // Calculate the image height, and ensure that it's at least 1.
         image_height = int(image_width / aspect_ratio);
@@ -106,8 +107,10 @@ class camera{
 
         point3 ray_origin = defocus_angle < 0 ? center : defocus_disk_sample();
         vec3 ray_direction = pixel_sample - ray_origin;
-
-        return ray(ray_origin, ray_direction);
+        
+        double ray_time = random_double();
+        
+        return ray(ray_origin, ray_direction, ray_time);
 
     }
     vec3 sample_square() const {

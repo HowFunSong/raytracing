@@ -3,7 +3,8 @@
 
 #include "hittable.hpp"
 
- class  material{
+
+class  material{
   public:
     virtual ~material() = default;
     virtual bool scatter(
@@ -25,7 +26,7 @@ class lambertian : public material{
         if (scatter_dir.near_zero())
             scatter_dir = rec.normal;
             
-        scattered = ray(rec.p, scatter_dir);
+        scattered = ray(rec.p, scatter_dir, r_in.time());
         attenuation = albedo;
         return true;
     }
@@ -43,7 +44,7 @@ class metal : public material{
     const override {
       // 要先判斷是否擊中hit -> rec 有資訊 -> 才使用這個function;
       vec3 reflected_dir = reflect(r_in.direction(), rec.normal) + (fuzz * random_unit_vector());
-      scattered = ray(rec.p, reflected_dir);
+      scattered = ray(rec.p, reflected_dir, r_in.time());
       attenuation = albedo;
       return dot(scattered.direction(), rec.normal) > 0;
 
@@ -76,7 +77,7 @@ class dielectric : public material {
         else
             direction = refract(unit_direction, rec.normal, ri);
 
-        scattered = ray(rec.p, direction);
+        scattered = ray(rec.p, direction, r_in.time());
         return true;
     }
 

@@ -1,6 +1,7 @@
 #ifndef HITTABLE_LIST_H
 #define HITTABLE_LIST_H
 
+#include "aabb.hpp"
 #include "hittable.hpp"
 #include <vector>
 
@@ -15,6 +16,7 @@ class hittable_list : public hittable{
 
     void add (shared_ptr<hittable> object){
         objects.push_back(object);
+        bbox = aabb(bbox, object->bounding_box());
     }
     void clear(){
         objects.clear();
@@ -35,8 +37,12 @@ class hittable_list : public hittable{
         }
         return hit_any;
     }
-  private :
 
+    aabb bounding_box() const override { return bbox; }
+
+  private :
+    aabb bbox ;
+    
 };
 
 

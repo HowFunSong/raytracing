@@ -27,6 +27,8 @@ inline double degrees_to_radians(double degrees) {
 }
 
 inline double random_double (){
+    // std::rand() 是C++標準函數庫，回傳一個整數，範圍在 [0, RAND_MAX]
+    // RAND_MAX + 1.0 會把整數轉成浮點數(因為 1.0 是double)
     // Returns a random real in [0,1).
     return std::rand() / (RAND_MAX + 1.0);
 }
@@ -34,6 +36,11 @@ inline double random_double (){
 inline double random_double(double min, double max) {
     // Returns a random real in [min,max).
     return min + (max-min)*random_double();
+}
+
+inline int random_int(int min, int max) {
+    // Returns a random integer in [min,max].
+    return int(random_double(min, max+1));
 }
 
 inline double random_double_mt() {

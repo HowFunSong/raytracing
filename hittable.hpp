@@ -2,6 +2,8 @@
 #define HITTABLE_H
 
 #include "utilis.hpp"
+#include "aabb.hpp"
+
 class material; 
 
 class hit_record{
@@ -21,11 +23,14 @@ class hit_record{
     }
 };
 
-
+// hittable is the base class of sphere
 class hittable{
   public:
     virtual ~hittable() = default;
     virtual bool hit(const ray&r, interval ray_t, hit_record& rec) const = 0;
+    virtual aabb bounding_box() const = 0;
+
+
   private:
 
 };
