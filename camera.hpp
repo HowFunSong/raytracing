@@ -131,9 +131,8 @@ class camera{
 
         hit_record rec;
         //if hit 
-        if (world.hit(r, interval(0.001, infinity), rec)) {
-            // vec3 direction = random_on_hemisphere(rec.normal);
-            // vec3 direction = rec.normal + random_unit_vector();
+        if (world.hit(r, interval(0.001, infinity), rec)) { //用bvh優化，原本對整體物件進行線性搜索O(n) -> O(log n)
+  
             ray scattered;
             color attenuation;
             if (rec.mat->scatter(r, rec, attenuation, scattered))

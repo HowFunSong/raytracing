@@ -2,7 +2,7 @@
 #define MATERIAL_H
 
 #include "hittable.hpp"
-
+#include "texture.hpp"
 
 class  material{
   public:
@@ -17,7 +17,11 @@ class  material{
 
 class lambertian : public material{
   public :
-    lambertian(const color& albedo) : albedo(albedo){}
+
+    // 1. 傳入color -> 呼叫 texture建構子
+    lambertian(const color& albedo) : tex(make_shared<solid_color>(albedo)){}
+    // 2. 傳入 texture 
+    lambertian(shared_ptr<texture> tex) : tex(tex){};
 
     bool scatter ( const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) 
     const override {
@@ -27,14 +31,15 @@ class lambertian : public material{
             scatter_dir = rec.normal;
             
         scattered = ray(rec.p, scatter_dir, r_in.time());
-        attenuation = albedo;
+        attenuation = tex->value (rec.u, rec.v, rec.p);
+
         return true;
     }
 
 
   private :
     color albedo;
-
+    shared_ptr<texture> tex;
 };
 
 class metal : public material{
