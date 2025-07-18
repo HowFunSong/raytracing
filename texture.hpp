@@ -77,15 +77,15 @@ class image_texture : public texture {
 class noise_texture : public texture {
   public:
 
-    noise_texture(double scale) :scale(scale){}
+    noise_texture(double freq) :freq(freq){}
 
     color value(double u, double v, const point3& p) const override {
-        return color(1,1,1) * noise.noise(scale * p);
+        return color(1,1,1) * 0.5 * (noise.noise(freq * p) + 1);
     }
 
   private:
     perlin noise;
-    double scale;
+    double freq;
 };
 
 #endif 
