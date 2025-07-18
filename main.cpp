@@ -8,8 +8,84 @@
 #include "material.hpp"
 #include "sphere.hpp"
 
+void perlin_spheres() {
+    hittable_list world;
 
-int main(int argc , char* argv[]){
+    auto pertext = make_shared<noise_texture>();
+    world.add(make_shared<sphere>(point3(0,-1000,0), 1000, make_shared<lambertian>(pertext)));
+    world.add(make_shared<sphere>(point3(0,2,0), 2, make_shared<lambertian>(pertext)));
+
+    camera cam;
+
+    cam.aspect_ratio      = 16.0 / 9.0;
+    cam.image_width       = 400;
+    cam.samples_per_pixel = 100;
+    cam.max_depth         = 50;
+
+    cam.vfov     = 20;
+    cam.lookfrom = point3(13,2,3);
+    cam.lookat   = point3(0,0,0);
+    cam.vup      = vec3(0,1,0);
+
+    cam.defocus_angle = 0;
+
+    cam.render(world);
+}
+
+void earth(){
+    auto earth_texture = make_shared<image_texture>("./textures/earthmap.jpg");
+    auto earth_surface = make_shared<lambertian>(earth_texture);
+    auto globe = make_shared<sphere>(point3(0,0,0), 2, earth_surface);
+    camera cam;
+
+    cam.aspect_ratio      = 16.0 / 9.0;
+    cam.image_width       = 400;
+    cam.samples_per_pixel = 100;
+    cam.max_depth         = 50;
+
+    cam.vfov     = 20;
+    cam.lookfrom = point3(0,0,12);
+    cam.lookat   = point3(0,0,0);
+    cam.vup      = vec3(0,1,0);
+
+    cam.defocus_angle = 0;
+
+    cam.render(hittable_list(globe));
+}
+void checkered_spheres(){
+
+    auto t_start = std::chrono::high_resolution_clock::now();
+    hittable_list world;
+    shared_ptr checker = make_shared<checker_texture>(0.32, color(.2, .3, .1), color(.9, .9, .9));
+    world.add(make_shared<sphere>(point3(0, 10, 0) , 10, make_shared<lambertian>(checker)));
+    world.add(make_shared<sphere>(point3(0, -10, 0), 10, make_shared<lambertian>(checker)));
+
+    //camera 
+    camera cam ;
+   
+    cam.aspect_ratio      = 16.0 / 9.0;
+    cam.image_width       = 400;
+    cam.samples_per_pixel = 100;
+    cam.max_depth         = 50;
+
+    cam.vfov     = 20;
+    cam.lookfrom = point3(13,2,3);
+    cam.lookat   = point3(0,0,0);
+    cam.vup      = vec3(0,1,0);
+
+    cam.defocus_angle = 0.6;
+    cam.focus_dist    = 10.0;
+    // Render
+    cam.render(world);
+
+    //record excution time 
+    auto t_end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = t_end - t_start;
+    std::clog << "total execution time: " << diff.count() << " seconds\n";
+}
+
+
+void bouncing_spheres(){
 
     auto t_start = std::chrono::high_resolution_clock::now();
     // World
@@ -82,6 +158,20 @@ int main(int argc , char* argv[]){
     auto t_end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> diff = t_end - t_start;
     std::clog << "total execution time: " << diff.count() << " seconds\n";
+}
+
+int main(int argc, char** argv){
+    
+    int case_number = 4;
+    
+    switch(case_number){
+        case 1 : bouncing_spheres(); break;
+        case 2 : checkered_spheres(); break;
+        case 3 : earth(); break;
+        case 4 : perlin_spheres() ; break;
+        default : bouncing_spheres();
+    }
+
     return 0;
 }
 
