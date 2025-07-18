@@ -11,7 +11,7 @@
 void perlin_spheres() {
     hittable_list world;
 
-    auto pertext = make_shared<noise_texture>();
+    auto pertext = make_shared<noise_texture>(4);
     world.add(make_shared<sphere>(point3(0,-1000,0), 1000, make_shared<lambertian>(pertext)));
     world.add(make_shared<sphere>(point3(0,2,0), 2, make_shared<lambertian>(pertext)));
 
@@ -52,6 +52,7 @@ void earth(){
 
     cam.render(hittable_list(globe));
 }
+
 void checkered_spheres(){
 
     auto t_start = std::chrono::high_resolution_clock::now();
@@ -83,7 +84,6 @@ void checkered_spheres(){
     std::chrono::duration<double> diff = t_end - t_start;
     std::clog << "total execution time: " << diff.count() << " seconds\n";
 }
-
 
 void bouncing_spheres(){
 
