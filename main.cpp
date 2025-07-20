@@ -9,6 +9,8 @@
 #include "sphere.hpp"
 #include "quad.hpp"
 
+const bool thread_in_use =  true;
+
 void cornell_box(){
     hittable_list world;
     shared_ptr<material> red = make_shared<lambertian>(color(.65, .05, .05));
@@ -41,7 +43,7 @@ void cornell_box(){
     camera cam;
 
     cam.aspect_ratio      = 1.0;
-    cam.image_width       = 400;
+    cam.image_width       = 600;
     cam.samples_per_pixel = 200;
     cam.max_depth         = 50;
     cam.background        = color(0,0,0);
@@ -53,7 +55,12 @@ void cornell_box(){
 
     cam.defocus_angle = 0;
 
-    cam.render(world);
+    if (thread_in_use){
+        cam.render_multi_threads(world);
+    }else{
+        cam.render(world);
+    }
+
 
 }
 void simple_light() {
@@ -83,7 +90,12 @@ void simple_light() {
 
     cam.defocus_angle = 0;
 
-    cam.render(world);
+    if (thread_in_use){
+        cam.render_multi_threads(world);
+    }else{
+        cam.render(world);
+    }
+
 }
 
 void quads(){
@@ -198,7 +210,7 @@ void checkered_spheres(){
 
 void bouncing_spheres(){
 
-    auto t_start = std::chrono::high_resolution_clock::now();
+    
     // World
     hittable_list world;
   
@@ -263,16 +275,19 @@ void bouncing_spheres(){
     cam.defocus_angle = 0.6;
     cam.focus_dist    = 10.0;
     // Render
-    cam.render(world);
+    if (thread_in_use){
+        cam.render_multi_threads(world);
+    }else{
+        cam.render(world);
+    }
 
-    //record excution time 
-    auto t_end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff = t_end - t_start;
-    std::clog << "total execution time: " << diff.count() << " seconds\n";
+
+   
 }
 
 int main(int argc, char** argv){
-    
+
+    auto t_start = std::chrono::high_resolution_clock::now();
     int case_number = 7;
     
     switch(case_number){
@@ -285,6 +300,11 @@ int main(int argc, char** argv){
         case 7 : cornell_box() ; break;
         default : bouncing_spheres();
     }
+
+     //record excution time 
+    auto t_end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = t_end - t_start;
+    std::clog << "total execution time: " << diff.count() << " seconds\n";
 
     return 0;
 }

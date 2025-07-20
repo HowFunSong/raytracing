@@ -3,6 +3,9 @@
 
 #include "hittable.hpp"
 #include "material.hpp"
+#include <thread>
+#include <fstream>
+#include <iomanip>
 
 class camera{
   public :
@@ -20,14 +23,70 @@ class camera{
 
     double defocus_angle = 0; // Variation angle of rays through each pixel
     double focus_dist = 10;    // Distance from camera lookfrom point to plane of perfect focus
-
-    void render (const hittable& world){
+    unsigned int  n_threads;
+    void render_multi_threads (const hittable& world){
 
         initialize();
-        std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
+
+        const int W = image_width;
+        const int H = image_height;
+
+        std::vector<color> framebuffer(W * H);
         
-        //可以用thread 然後結合矩陣先把資料存在memory
-        for (int j = 0; j < image_height; j++) {
+        auto worker = [&](int start_row, int end_row, int tid) {
+            
+            int total = end_row - start_row;
+
+            for (int j = start_row; j < end_row; ++j) {
+                for (int i = 0; i < W; ++i) {
+                    
+                    color pixel_color(0.0, 0.0, 0.0);
+                    for (int s = 0; s < samples_per_pixel; ++s) {
+                        ray r = get_ray(i, j);
+                        pixel_color += ray_color(r, max_depth, world);
+                    }
+                    // 平均
+                    pixel_color *= pixel_sample_scale;
+                    // 存到 framebuffer
+                    framebuffer[j * W + i] = pixel_color;
+                }
+            }
+
+            std::clog << "Worker " << tid << " done.\n";
+        };
+        
+        // 決定使用的執行緒數
+        n_threads = std::thread::hardware_concurrency();
+        if (n_threads == 0) n_threads = 4;  
+        std::clog << "number of thread in use : " << n_threads << "\n" << std::flush;
+
+        std::vector<std::thread> threads;
+        threads.reserve(n_threads);
+
+        // 把 H 列平分給各執行緒
+        int rows_per_thread = H / n_threads;
+        int row_start = 0;
+        for (unsigned t = 0; t < n_threads; ++t) {
+            int row_end = (t == n_threads - 1) ? H : row_start + rows_per_thread;
+            threads.emplace_back(worker, row_start, row_end, t);
+            row_start = row_end;
+        }
+
+        for (auto& th : threads) th.join();
+
+        std::cout << "P3\n" << W << ' ' << H << "\n255\n";
+
+        for (int idx = 0; idx < W * H; ++idx) {
+            write_color(std::cout, framebuffer[idx]);
+        }
+        std::clog << "Done.\n\n";
+    }
+
+
+    void render(const hittable& world){
+        initialize();
+        std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
+         for (int j = 0; j < image_height; j++) {
             std::clog << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
             for (int i = 0; i < image_width; i++) {
                 color pixel_color (0.0, 0.0, 0.0);
@@ -39,10 +98,6 @@ class camera{
                 write_color(std::cout, pixel_sample_scale * pixel_color);
             }
         }
-
-        //最後在把圖片寫入記憶體
-
-        std::clog << "Done.\n\n";
     }
 
   private :
