@@ -1,11 +1,15 @@
 #ifndef CAMERA_H
 #define CAMERA_H
-
+#include <iostream>
 #include <thread>
 #include <fstream>
 #include <memory>
 #include "hittable.hpp"
 #include "material.hpp"
+#include <indicators/dynamic_progress.hpp>
+#include <indicators/progress_bar.hpp>
+using namespace indicators;
+
 
 class camera{
   public :
@@ -32,14 +36,34 @@ class camera{
         const int H = image_height;
 
         std::vector<color> framebuffer(W * H);
-        
-
         // 決定使用的執行緒數
         n_threads = std::thread::hardware_concurrency();
         if (n_threads == 0) n_threads = 4;  
         std::clog << "number of thread in use : " << n_threads << "\n" << std::flush;
+        
         // 把 H 列平分給各執行緒
         int rows_per_thread = H / n_threads;
+
+        std::vector<std::unique_ptr<ProgressBar>> bars_vec;
+            for (unsigned t = 0; t < n_threads; ++t) {
+                int rows = rows_per_thread;
+
+                char buf[16] ;
+                std::snprintf(buf, sizeof(buf), "Worker %2u: ", t);
+
+                bars_vec.emplace_back(std::make_unique<ProgressBar>(
+                    option::Stream{std::clog},
+                    option::BarWidth{50},
+                    option::MaxProgress{rows},
+                    option::PrefixText{buf},
+                    indicators::option::FontStyles{
+                        std::vector<indicators::FontStyle>{indicators::FontStyle::bold}}));
+            }
+
+        DynamicProgress<ProgressBar> bars(std::move(bars_vec[0]));
+        for (unsigned t = 1; t < n_threads; ++t)
+            bars.push_back(std::move(bars_vec[t]));
+        bars.set_option(option::HideBarWhenComplete{false});
 
         auto worker = [&](int start_row, int end_row, int tid) {
             
@@ -57,11 +81,12 @@ class camera{
                     pixel_color *= pixel_sample_scale;
                     // 存到 framebuffer
                     framebuffer[j * W + i] = pixel_color;
+                    
                 }
-              
+                bars[tid].tick();
+     
             }
 
-            std::clog << "Worker " << tid << " done.\n";
         };
         
         std::vector<std::thread> threads;
@@ -76,10 +101,11 @@ class camera{
 
         for (auto& th : threads) th.join();
 
-        std::cout << "P3\n" << W << ' ' << H << "\n255\n";
+        std::ofstream ofs("out/img.ppm");
+        ofs << "P3\n" << W << ' ' << H << "\n255\n";
 
         for (int idx = 0; idx < W * H; ++idx) {
-            write_color(std::cout, framebuffer[idx]);
+            write_color(ofs, framebuffer[idx]);
         }
         std::clog << "Done.\n\n";
     }
@@ -87,8 +113,9 @@ class camera{
 
     void render(const hittable& world){
         initialize();
-        std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
-         for (int j = 0; j < image_height; j++) {
+        std::ofstream ofs("out/img.ppm");
+        ofs << "P3\n" << image_width << ' ' << image_height << "\n255\n";
+        for (int j = 0; j < image_height; j++) {
             std::clog << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
             for (int i = 0; i < image_width; i++) {
                 color pixel_color (0.0, 0.0, 0.0);
@@ -97,9 +124,10 @@ class camera{
                     pixel_color += ray_color(r, max_depth, world);
                 }
     
-                write_color(std::cout, pixel_sample_scale * pixel_color);
+                write_color(ofs, pixel_sample_scale * pixel_color);
             }
         }
+        ofs.close();
     }
 
   private :

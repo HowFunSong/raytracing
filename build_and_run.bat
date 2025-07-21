@@ -26,13 +26,13 @@ if %errorlevel% neq 0 (
 rem Run the compiled program
 rem Redirect std::cout to img.ppm and keep std::clog on the console
 echo Compilation successful. Running the program...
-build\main.exe 1> out\img.ppm 2> con
+build\main.exe 1> out\log.txt 2> con
 
 if %errorlevel% neq 0 (
     echo Failed to execute the program.
     exit /b %errorlevel%
 )
-echo Output written to out\img.ppm
+echo Output written to out\log.txt 
 
 rem Use ImageMagick to convert PPM to PNG
 magick out\img.ppm out\raytracer.png

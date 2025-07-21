@@ -10,7 +10,43 @@
 #include "constant_medium.hpp"
 #include "quad.hpp"
 
-const bool thread_in_use =  false;
+#ifdef _WIN32
+
+#include <windows.h>
+void enableVT() {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut != INVALID_HANDLE_VALUE)
+    {
+        DWORD dwOriginalOutMode = 0;
+        GetConsoleMode(hOut, &dwOriginalOutMode);
+
+        // Enable ANSI escape code processing
+        DWORD dwRequestedOutModes = dwOriginalOutMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+        if (!SetConsoleMode(hOut, dwRequestedOutModes)) {
+            SetConsoleMode(hOut, dwOriginalOutMode);
+        }
+    }
+    // 2. 隱藏游標
+    CONSOLE_CURSOR_INFO cursorInfo{};
+    if (GetConsoleCursorInfo(hOut, &cursorInfo)) {
+        cursorInfo.bVisible = FALSE;
+        SetConsoleCursorInfo(hOut, &cursorInfo);
+    }
+}
+
+// 程式結束前呼叫，還原游標顯示
+void restoreCursor() {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO cursorInfo{};
+    if (GetConsoleCursorInfo(hOut, &cursorInfo)) {
+        cursorInfo.bVisible = TRUE;
+        SetConsoleCursorInfo(hOut, &cursorInfo);
+    }
+}
+
+#endif
+
+const bool thread_in_use =  true;
 
 void final_scene(int image_width, int samples_per_pixel, int max_depth) {
     hittable_list boxes1;
@@ -308,8 +344,10 @@ void earth(){
     cam.vup      = vec3(0,1,0);
 
     cam.defocus_angle = 0;
-
-    cam.render(hittable_list(globe));
+    if (thread_in_use)
+        cam.render_multi_threads(hittable_list(globe));
+    else
+        cam.render(hittable_list(globe));
 }
 
 void checkered_spheres(){
@@ -423,9 +461,30 @@ void bouncing_spheres(){
 }
 
 int main(int argc, char** argv){
+    #ifdef _WIN32
+        enableVT();
+    #endif
+    int case_number = 0;
+    if (argc >= 2) {
+        // 將 argv[1] 轉成整數
+        case_number = std::atoi(argv[1]);
+    } else {
+        std::clog << "Usage: " << argv[0] << " <scene_number>\n"
+                  << "  1: bouncing_spheres\n"
+                  << "  2: checkered_spheres\n"
+                  << "  3: earth\n"
+                  << "  4: perlin_spheres\n"
+                  << "  5: quads\n"
+                  << "  6: simple_light\n"
+                  << "  7: cornell_box\n"
+                  << "  8: cornell_smoke\n"
+                  << "  9: final_scene\n";
+        // 預設使用第 5 個場景 (quads)
+        case_number = 0;
+    }
 
+    
     auto t_start = std::chrono::high_resolution_clock::now();
-    int case_number = 10;
     
     switch(case_number){
         case 1 : bouncing_spheres(); break;
@@ -437,13 +496,20 @@ int main(int argc, char** argv){
         case 7 : cornell_box() ; break;
         case 8:  cornell_smoke(); break;
         case 9:  final_scene(800, 10000, 40); break;
-        default: final_scene(400,   100,  10); break;
+        default:
+            std::clog << "Unknown scene " << case_number << ", defaulting final scene.\n";
+            final_scene(400,   250,  4);;
+            break;
     }
 
      //record excution time 
     auto t_end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> diff = t_end - t_start;
     std::clog << "total execution time: " << diff.count() << " seconds\n";
+    
+    #ifdef _WIN32
+        restoreCursor();
+    #endif
 
     return 0;
 }
