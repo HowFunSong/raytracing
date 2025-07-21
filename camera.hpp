@@ -1,11 +1,11 @@
 #ifndef CAMERA_H
-#define CAMERA_h
+#define CAMERA_H
 
-#include "hittable.hpp"
-#include "material.hpp"
 #include <thread>
 #include <fstream>
-#include <iomanip>
+#include <memory>
+#include "hittable.hpp"
+#include "material.hpp"
 
 class camera{
   public :
@@ -33,6 +33,14 @@ class camera{
 
         std::vector<color> framebuffer(W * H);
         
+
+        // 決定使用的執行緒數
+        n_threads = std::thread::hardware_concurrency();
+        if (n_threads == 0) n_threads = 4;  
+        std::clog << "number of thread in use : " << n_threads << "\n" << std::flush;
+        // 把 H 列平分給各執行緒
+        int rows_per_thread = H / n_threads;
+
         auto worker = [&](int start_row, int end_row, int tid) {
             
             int total = end_row - start_row;
@@ -50,22 +58,16 @@ class camera{
                     // 存到 framebuffer
                     framebuffer[j * W + i] = pixel_color;
                 }
+              
             }
 
             std::clog << "Worker " << tid << " done.\n";
         };
         
-        // 決定使用的執行緒數
-        n_threads = std::thread::hardware_concurrency();
-        if (n_threads == 0) n_threads = 4;  
-        std::clog << "number of thread in use : " << n_threads << "\n" << std::flush;
-
         std::vector<std::thread> threads;
         threads.reserve(n_threads);
-
-        // 把 H 列平分給各執行緒
-        int rows_per_thread = H / n_threads;
         int row_start = 0;
+        
         for (unsigned t = 0; t < n_threads; ++t) {
             int row_end = (t == n_threads - 1) ? H : row_start + rows_per_thread;
             threads.emplace_back(worker, row_start, row_end, t);
@@ -200,8 +202,6 @@ class camera{
         color color_from_scatter = attenuation * ray_color(scattered, depth-1 , world);
         
         return color_from_scatter + color_from_emmission;
-
-
 
     }
 };

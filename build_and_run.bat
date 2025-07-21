@@ -14,7 +14,7 @@ rem Create the build directory if it does not exist
 if not exist build mkdir build
 
 rem Compile the program
-g++ -g -o build\main.exe main.cpp -static-libgcc -static-libstdc++
+g++ -g -o build\main.exe main.cpp -static-libgcc -static-libstdc++ -Iinclude
 @REM g++ -H -g -Llib -o build\main.exe main.cpp -static-libgcc -static-libstdc++
 
 rem Check if the compilation was successful
