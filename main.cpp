@@ -124,9 +124,9 @@ void final_scene(int image_width, int samples_per_pixel, int max_depth) {
 
     cam.defocus_angle = 0;
 
-    if (thread_in_use)
+    if (thread_in_use){
         cam.render_multi_threads(world);
-    else
+    }else
         cam.render(world);
 }
 
@@ -172,9 +172,9 @@ void cornell_smoke(){
     cam.defocus_angle = 0;
 
     
-    if (thread_in_use)
+    if (thread_in_use){
         cam.render_multi_threads(world);
-    else
+    }else
         cam.render(world);
 
 }
@@ -212,7 +212,7 @@ void cornell_box(){
 
     cam.aspect_ratio      = 1.0;
     cam.image_width       = 600;
-    cam.samples_per_pixel = 200;
+    cam.samples_per_pixel = 1000;
     cam.max_depth         = 50;
     cam.background        = color(0,0,0);
 
@@ -223,9 +223,9 @@ void cornell_box(){
 
     cam.defocus_angle = 0;
 
-    if (thread_in_use)
+    if (thread_in_use){
         cam.render_multi_threads(world);
-    else
+    }else
         cam.render(world);
 
 }
@@ -292,9 +292,9 @@ void quads(){
     cam.vup      = vec3(0,1,0);
     cam.defocus_angle = 0;
 
-    if (thread_in_use)
+    if (thread_in_use){
         cam.render_multi_threads(world);
-    else
+    }else
         cam.render(world);
     
 }
@@ -320,9 +320,9 @@ void perlin_spheres() {
 
     cam.defocus_angle = 0;
 
-    if (thread_in_use)
+     if (thread_in_use){
         cam.render_multi_threads(world);
-    else
+    }else
         cam.render(world);
     
 }
@@ -344,9 +344,9 @@ void earth(){
     cam.vup      = vec3(0,1,0);
 
     cam.defocus_angle = 0;
-    if (thread_in_use)
+    if (thread_in_use){
         cam.render_multi_threads(hittable_list(globe));
-    else
+    }else
         cam.render(hittable_list(globe));
 }
 
@@ -374,9 +374,9 @@ void checkered_spheres(){
     cam.defocus_angle = 0.6;
     cam.focus_dist    = 10.0;
     // Render
-    if (thread_in_use)
+     if (thread_in_use){
         cam.render_multi_threads(world);
-    else
+    }else
         cam.render(world);
     
 
@@ -453,36 +453,34 @@ void bouncing_spheres(){
     cam.defocus_angle = 0.6;
     cam.focus_dist    = 10.0;
     // Render
-    if (thread_in_use)
+    if (thread_in_use){
         cam.render_multi_threads(world);
-    else
+    }else
         cam.render(world);
 
 }
 
 int main(int argc, char** argv){
-    #ifdef _WIN32
-        enableVT();
-    #endif
-    int case_number = 0;
-    if (argc >= 2) {
-        // 將 argv[1] 轉成整數
-        case_number = std::atoi(argv[1]);
-    } else {
-        std::clog << "Usage: " << argv[0] << " <scene_number>\n"
-                  << "  1: bouncing_spheres\n"
-                  << "  2: checkered_spheres\n"
-                  << "  3: earth\n"
-                  << "  4: perlin_spheres\n"
-                  << "  5: quads\n"
-                  << "  6: simple_light\n"
-                  << "  7: cornell_box\n"
-                  << "  8: cornell_smoke\n"
-                  << "  9: final_scene\n";
-        // 預設使用第 5 個場景 (quads)
-        case_number = 0;
-    }
 
+    int case_number = 7;
+    if (argc >= 2) 
+        case_number = std::atoi(argv[1]);//// 將 argv[1] 轉成整數
+    
+    std::clog << "Usage: " << case_number << " <scene_number>\n"
+                << "  1: bouncing_spheres\n"
+                << "  2: checkered_spheres\n"
+                << "  3: earth\n"
+                << "  4: perlin_spheres\n"
+                << "  5: quads\n"
+                << "  6: simple_light\n"
+                << "  7: cornell_box\n"
+                << "  8: cornell_smoke\n"
+                << "  9: final_scene\n" << std::flush;
+    
+ 
+    #ifdef _WIN32
+        if (thread_in_use) enableVT();
+    #endif
     
     auto t_start = std::chrono::high_resolution_clock::now();
     
@@ -508,7 +506,7 @@ int main(int argc, char** argv){
     std::clog << "total execution time: " << diff.count() << " seconds\n";
     
     #ifdef _WIN32
-        restoreCursor();
+        if (thread_in_use) restoreCursor();
     #endif
 
     return 0;
