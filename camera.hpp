@@ -5,6 +5,7 @@
 #include <fstream>
 #include <memory>
 #include "hittable.hpp"
+#include "pdf.hpp"
 #include "material.hpp"
 #include <indicators/dynamic_progress.hpp>
 #include <indicators/progress_bar.hpp>
@@ -28,7 +29,8 @@ class camera{
     double defocus_angle = 0; // Variation angle of rays through each pixel
     double focus_dist = 10;    // Distance from camera lookfrom point to plane of perfect focus
     unsigned int  n_threads;
-    void render_multi_threads (const hittable& world){
+
+    void render_multi_threads (const hittable& world, const hittable& lights){
 
         initialize();
 
@@ -76,7 +78,7 @@ class camera{
                     for (int s_j = 0 ; s_j < sqrt_spp ; s_j++){
                         for (int s_i = 0 ; s_i < sqrt_spp ; s_i++){
                             ray r = get_ray(i, j, s_i, s_j);
-                            pixel_color += ray_color(r, max_depth, world);
+                            pixel_color += ray_color(r, max_depth, world, lights);
                         }
                     }
                     // 平均
@@ -113,7 +115,7 @@ class camera{
     }
 
 
-    void render(const hittable& world){
+    void render(const hittable& world, const hittable& lights){
         initialize();
         std::ofstream ofs("out/img.ppm");
         ofs << "P3\n" << image_width << ' ' << image_height << "\n255\n";
@@ -124,7 +126,7 @@ class camera{
                 for (int s_j = 0 ; s_j < sqrt_spp ; s_j++){
                     for (int s_i = 0 ; s_i < sqrt_spp ; s_i++){
                         ray r = get_ray(i, j, s_i, s_j);
-                        pixel_color += ray_color(r, max_depth, world);
+                        pixel_color += ray_color(r, max_depth, world, lights);
                     }
                 }
                 write_color(ofs, pixel_sample_scale * pixel_color);
@@ -233,7 +235,7 @@ class camera{
     }
 
 
-    color ray_color(const ray& r, int depth,const hittable& world) const{
+    color ray_color(const ray& r, int depth,const hittable& world, const hittable& lights) const{
         if (depth <= 0) return color(0, 0, 0);
 
         hit_record rec;
@@ -241,20 +243,37 @@ class camera{
         if (!world.hit(r, interval(0.001, infinity), rec))  //用bvh優化，原本對整體物件進行線性搜索O(n) -> O(log n)
             return background;
         
-        ray scattered;
-        color attenuation;
-        color color_from_emmission = rec.mat->emitted(rec.u, rec.v, rec.p);
+        // ray scattered;
+        // color attenuation;
+        // double pdf_value;
+        scatter_record srec;
+        color color_from_emission = rec.mat->emitted(r, rec, rec.u, rec.v, rec.p);
         
+        ///
+        if (!rec.mat->scatter(r, rec, srec))
+            return color_from_emission;
         
-        if (!rec.mat->scatter(r, rec, attenuation, scattered))
-            return color_from_emmission;
-        
-        double scattering_pdf = rec.mat->scattering_pdf(r, rec, scattered);
-        double pdf_value = scattering_pdf;
+        if (srec.skip_pdf) {
+            return srec.attenuation * ray_color(srec.skip_pdf_ray, depth-1, world, lights);
+        }
+        // double scattering_pdf = rec.mat->scattering_pdf(r, rec, scattered);
+        // pdf_value = scattering_pdf;
+        ///
 
-        color color_from_scatter = (attenuation * scattering_pdf * ray_color(scattered, depth-1 , world)) / pdf_value;
+        auto light_ptr = make_shared<hittable_pdf>(lights, rec.p);
+        mixture_pdf p(light_ptr, srec.pdf_ptr);
+
+        ray scattered = ray(rec.p, p.generate(), r.time());
+        auto pdf_value = p.value(scattered.direction());
+
+        double scattering_pdf = rec.mat->scattering_pdf(r, rec, scattered);
+
+        color sample_color = ray_color(scattered, depth-1, world, lights);
+        color color_from_scatter =
+            (srec.attenuation * scattering_pdf * sample_color) / pdf_value;
+
         
-        return color_from_scatter + color_from_emmission;
+        return color_from_scatter + color_from_emission;
 
     }
 };

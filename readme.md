@@ -25,8 +25,8 @@ mkdir -p build
 
 # Compile the program
 # - Outputs executable to build/main.exe (Windows) or build/main (Unix)
-g++ -g -std=c++17 -static-libgcc -static-libstdc++ -Iinclude \
-    main.cpp -o build/main.exe
+g++ -g -std=c++17 -static-libstdc++ -Iinclude main.cpp -o build/main.exe
+
 ```
 
 ### 2. Run a scene
