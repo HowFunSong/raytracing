@@ -245,10 +245,14 @@ class camera{
         color attenuation;
         color color_from_emmission = rec.mat->emitted(rec.u, rec.v, rec.p);
         
+        
         if (!rec.mat->scatter(r, rec, attenuation, scattered))
             return color_from_emmission;
         
-        color color_from_scatter = attenuation * ray_color(scattered, depth-1 , world);
+        double scattering_pdf = rec.mat->scattering_pdf(r, rec, scattered);
+        double pdf_value = scattering_pdf;
+
+        color color_from_scatter = (attenuation * scattering_pdf * ray_color(scattered, depth-1 , world)) / pdf_value;
         
         return color_from_scatter + color_from_emmission;
 

@@ -16,6 +16,10 @@ class  material{
     )const{
        return false; 
     }
+    virtual double scattering_pdf(const ray&r_in, const hit_record& rec, const ray& scattered) 
+    const{
+      return 0;  
+    }
 };
 
 
@@ -29,7 +33,8 @@ class lambertian : public material{
 
     bool scatter ( const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) 
     const override {
-        vec3 scatter_dir = rec.normal + random_unit_vector();
+        //vec3 scatter_dir = rec.normal + random_unit_vector();
+        vec3 scatter_dir = random_on_hemisphere(rec.normal);
         // Catch degenerate scatter direction
         if (scatter_dir.near_zero())
             scatter_dir = rec.normal;
@@ -38,6 +43,14 @@ class lambertian : public material{
         attenuation = tex->value (rec.u, rec.v, rec.p);
 
         return true;
+    }
+
+    double scattering_pdf(const ray&r_in, const hit_record& rec, const ray& scattered) 
+    const override{
+        // auto cos_theta = dot(rec.normal, unit_vector(scattered.direction()));
+        // return cos_theta < 0 ? 0 : cos_theta/pi;
+        return 1 / (2*pi);
+
     }
 
 
