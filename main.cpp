@@ -48,6 +48,67 @@ void restoreCursor() {
 
 const bool thread_in_use =  true;
 
+
+void cornell_box2(){
+    hittable_list world;
+    shared_ptr<material> red = make_shared<lambertian>(color(.65, .05, .05));
+    shared_ptr<material> white = make_shared<lambertian>(color(.73, .73, .73));
+    shared_ptr<material> green = make_shared<lambertian>(color(.12, .45, .15));
+
+    // Light
+    shared_ptr<material> light = make_shared<diffuse_light>(color(15, 15, 15));
+
+
+    shared_ptr<material> earth_surface = make_shared<lambertian>(make_shared<image_texture>("./textures/earthmap.jpg"));
+
+    world.add(make_shared<quad>(point3(555,0,0), vec3(0,555,0), vec3(0,0,555), green));
+    world.add(make_shared<quad>(point3(0,0,0), vec3(0,555,0), vec3(0,0,555), red));
+    world.add(make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light));
+    world.add(make_shared<quad>(point3(0,0,0), vec3(555,0,0), vec3(0,0,555), white));//下
+    world.add(make_shared<quad>(point3(555,555,555), vec3(-555,0,0), vec3(0,0,-555), white));//中
+    world.add(make_shared<quad>(point3(0,0,555), vec3(555,0,0), vec3(0,555,0), white));//上
+
+    // Box
+    shared_ptr<hittable> box1 = box(point3(0,0,0), point3(165,330,165), white);
+    box1 = make_shared<rotate_y>(box1, 15);
+    box1 = make_shared<translate>(box1, vec3(265,0,295));
+    world.add(box1);
+
+    // Glass Sphere
+    auto glass = make_shared<dielectric>(1.5);
+    world.add(make_shared<sphere>(point3(190,90,190), 90, glass));
+
+    //    // Light Sources
+    auto empty_material = shared_ptr<material>();
+    hittable_list lights;
+    lights.add(
+        make_shared<quad>(point3(343,554,332), vec3(-130,0,0), vec3(0,0,-105), empty_material));
+    lights.add(make_shared<sphere>(point3(190, 90, 190), 90, empty_material));
+
+    camera cam;
+
+    cam.aspect_ratio      = 1.0;
+    cam.image_width       = 600;
+    cam.samples_per_pixel = 1000;
+    cam.max_depth         = 50;
+    cam.background        = color(0,0,0);
+
+    cam.vfov     = 40;
+    cam.lookfrom = point3(278, 278, -800);
+    cam.lookat   = point3(278, 278, 0);
+    cam.vup      = vec3(0,1,0);
+
+    cam.defocus_angle = 0;
+
+    if (thread_in_use){
+        cam.render_multi_threads(world, lights);
+    }else
+        cam.render(world, lights);
+
+}
+
+
+
 // void final_scene(int image_width, int samples_per_pixel, int max_depth) {
 //     hittable_list boxes1;
 //     auto ground = make_shared<lambertian>(color(0.48, 0.83, 0.53));
@@ -481,7 +542,8 @@ int main(int argc, char** argv){
                 << "  6: simple_light\n"
                 << "  7: cornell_box\n"
                 << "  8: cornell_smoke\n"
-                << "  9: final_scene\n" << std::flush;
+                << "  9: final_scene\n" 
+                << "  10: cornell_box2\n" << std::flush;
     
  
     #ifdef _WIN32
@@ -500,10 +562,12 @@ int main(int argc, char** argv){
         case 7 : cornell_box() ; break;
         // case 8:  cornell_smoke(); break;
         // case 9:  final_scene(800, 10000, 40); break;
+        case 10 : cornell_box2() ; break;
+
         default:
             std::clog << "Unknown scene " << case_number << ", defaulting final scene.\n";
             // final_scene(400,   250,  4);
-            cornell_box();
+            cornell_box2();
             break;
     }
 
